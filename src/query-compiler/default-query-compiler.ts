@@ -92,6 +92,7 @@ import { OverNode } from '../operation-node/over-node.js'
 import { PartitionByNode } from '../operation-node/partition-by-node.js'
 import { PartitionByItemNode } from '../operation-node/partition-by-item-node.js'
 import { SetOperationNode } from '../operation-node/set-operation-node.js'
+import { QueryId } from '../util/query-id.js'
 
 export class DefaultQueryCompiler
   extends OperationNodeVisitor
@@ -104,7 +105,7 @@ export class DefaultQueryCompiler
     return this.#parameters.length
   }
 
-  compileQuery(node: RootOperationNode): CompiledQuery {
+  compileQuery(node: RootOperationNode, queryId: QueryId): CompiledQuery {
     this.#sql = ''
     this.#parameters = []
 
@@ -112,6 +113,7 @@ export class DefaultQueryCompiler
 
     return freeze({
       query: node,
+      queryId,
       sql: this.getSql(),
       parameters: [...this.#parameters],
     })

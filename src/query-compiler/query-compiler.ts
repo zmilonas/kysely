@@ -11,6 +11,7 @@ import { DropTypeNode } from '../operation-node/drop-type-node.js'
 import { DropViewNode } from '../operation-node/drop-view-node.js'
 import { QueryNode } from '../operation-node/query-node.js'
 import { RawNode } from '../operation-node/raw-node.js'
+import { QueryId } from '../util/query-id.js'
 import { CompiledQuery } from './compiled-query.js'
 
 export type RootOperationNode =
@@ -32,5 +33,5 @@ export type RootOperationNode =
  * a `QueryCompiler` compiles a query expressed as a tree of `OperationNodes` into SQL.
  */
 export interface QueryCompiler {
-  compileQuery(node: RootOperationNode): CompiledQuery
+  compileQuery(node: RootOperationNode, queryId: QueryId): CompiledQuery
 }

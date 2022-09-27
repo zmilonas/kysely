@@ -182,6 +182,7 @@ export {
   UnknownRow,
   AnySelectQueryBuilder,
 } from './util/type-utils.js'
+export { QueryId } from './util/query-id.js'
 
 export {
   SelectExpression,
