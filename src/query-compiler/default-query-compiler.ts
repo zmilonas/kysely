@@ -785,17 +785,7 @@ export class DefaultQueryCompiler
 
     if (node.expression) {
       this.append(' (')
-
-      if (RawNode.is(node.expression)) {
-        this.append('(')
-      }
-
       this.visitNode(node.expression)
-
-      if (RawNode.is(node.expression)) {
-        this.append(')')
-      }
-
       this.append(')')
     }
   }
