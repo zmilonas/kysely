@@ -1,10 +1,17 @@
 import { DynamicReferenceBuilder } from '../dynamic/dynamic-reference-builder.js'
 import { AggregateFunctionNode } from '../operation-node/aggregate-function-node.js'
 import {
+  CoalesceReferenceExpressionList,
+  parseCoalesce,
+} from '../parser/coalesce-parser.js'
+import {
   ExtractTypeFromReferenceExpression,
   SimpleReferenceExpression,
   parseSimpleReferenceExpression,
+  ReferenceExpression,
 } from '../parser/reference-parser.js'
+import { RawBuilder } from '../raw-builder/raw-builder.js'
+import { createQueryId } from '../util/query-id.js'
 import { AggregateFunctionBuilder } from './aggregate-function-builder.js'
 
 /**
@@ -42,6 +49,7 @@ import { AggregateFunctionBuilder } from './aggregate-function-builder.js'
 export class FunctionModule<DB, TB extends keyof DB> {
   constructor() {
     this.avg = this.avg.bind(this)
+    this.coalesce = this.coalesce.bind(this)
     this.count = this.count.bind(this)
     this.max = this.max.bind(this)
     this.min = this.min.bind(this)
@@ -53,13 +61,13 @@ export class FunctionModule<DB, TB extends keyof DB> {
    *
    * If this is used in a `select` statement the type of the selected expression
    * will be `number | string` by default. This is because Kysely can't know the
-   * type the db driver outputs. Sometimes the output can be larger than the
-   * largest javascript number and a string is returned instead. Most drivers
-   * allow you to configure the output type of large numbers and Kysely can't
-   * know if you've done so.
+   * type the db driver outputs. Sometimes the output can be larger than the largest
+   * javascript number and a string is returned instead. Most drivers allow you
+   * to configure the output type of large numbers and Kysely can't know if you've
+   * done so.
    *
-   * You can specify the output type of the expression by providing
-   * the type as the first type argument:
+   * You can specify the output type of the expression by providing the type as
+   * the first type argument:
    *
    * ```ts
    * const { avg } = db.fn
@@ -68,9 +76,22 @@ export class FunctionModule<DB, TB extends keyof DB> {
    *   .select(avg<number>('price').as('avg_price'))
    *   .execute()
    * ```
+   *
+   * Sometimes a null is returned, e.g. when row count is 0, and no `group by`
+   * was used. It is highly recommended to include null in the output type union
+   * and handle null values in post-execute code, or wrap the function with a `coalesce`
+   * function.
+   *
+   * ```ts
+   * const { avg } = db.fn
+   *
+   * db.selectFrom('toy')
+   *   .select(avg<number | null>('price').as('avg_price'))
+   *   .execute()
+   * ```
    */
   avg<
-    O extends number | string,
+    O extends number | string | null = number | string,
     C extends SimpleReferenceExpression<DB, TB> = SimpleReferenceExpression<
       DB,
       TB
@@ -85,14 +106,61 @@ export class FunctionModule<DB, TB extends keyof DB> {
   }
 
   /**
+   * Calls the `coalesce` function for given arguments.
+   *
+   * This function returns the first non-null value from left to right, commonly
+   * used to provide a default scalar for nullable columns or functions.
+   *
+   * ```ts
+   * const { coalesce, max } = db.fn
+   *
+   * db.selectFrom('person')
+   *   .select(coalesce(max('age'), sql<number>`0`).as('max_age'))
+   *   .where('first_name', '=', 'Jennifer')
+   *   .execute()
+   * ```
+   *
+   * The generated SQL (postgres):
+   *
+   * ```sql
+   * select coalesce(max("age"), 0) as "max_age" from "person" where "first_name" = $1
+   * ```
+   *
+   * If this is used in a `select` statement the type of the selected expression
+   * is inferred in the same manner that the function computes. A union of arguments'
+   * types - if a non-nullable argument exists, it stops there (ignoring any further
+   * arguments' types) and exludes null from the final union type.
+   *
+   * Examples:
+   *
+   * `(string | null, number | null)` is inferred as `string | number | null`.
+   *
+   * `(string | null, number, Date | null)` is inferred as `string | number`.
+   *
+   * `(number, string | null)` is inferred as `number`.
+   */
+  coalesce<
+    V extends ReferenceExpression<DB, TB>,
+    OV extends ReferenceExpression<DB, TB>[]
+  >(
+    value: V,
+    ...otherValues: OV
+  ): RawBuilder<CoalesceReferenceExpressionList<DB, TB, [V, ...OV]>> {
+    return new RawBuilder({
+      queryId: createQueryId(),
+      rawNode: parseCoalesce([value, ...otherValues]),
+    })
+  }
+
+  /**
    * Calls the `count` function for the column given as the argument.
    *
    * If this is used in a `select` statement the type of the selected expression
-   * will be `number | string | bigint` by default. This is because Kysely can't
-   * know the type the db driver outputs. Sometimes the output can be larger than
-   * the largest javascript number and a string is returned instead. Most drivers
-   * allow you to configure the output type of large numbers and Kysely can't
-   * know if you've done so.
+   * will be `number | string | bigint` by default. This is because Kysely
+   * can't know the type the db driver outputs. Sometimes the output can be larger
+   * than the largest javascript number and a string is returned instead. Most
+   * drivers allow you to configure the output type of large numbers and Kysely
+   * can't know if you've done so.
    *
    * You can specify the output type of the expression by providing
    * the type as the first type argument:
@@ -131,6 +199,9 @@ export class FunctionModule<DB, TB extends keyof DB> {
   /**
    * Calls the `max` function for the column given as the argument.
    *
+   * If this is used in a `select` statement the type of the selected expression
+   * will be the referenced column's type.
+   *
    * ### Examples
    *
    * ```ts
@@ -140,16 +211,30 @@ export class FunctionModule<DB, TB extends keyof DB> {
    *   .select(max('price').as('max_price'))
    *   .execute()
    * ```
+   *
+   * Sometimes a null is returned, e.g. when row count is 0, and no `group by`
+   * was used. It is highly recommended to include null in the output type union
+   * and handle null values in post-execute code, or wrap the function with a `coalesce`
+   * function.
+   *
+   * ```ts
+   * const { max } = db.fn
+   *
+   * db.selectFrom('toy')
+   *   .select(max<number | null, 'price'>('price').as('max_price'))
+   *   .execute()
+   * ```
    */
   max<
-    O extends number | string | bigint,
-    C extends SimpleReferenceExpression<DB, TB> = DynamicReferenceBuilder<any>
+    O extends number | string | bigint | null = number | string | bigint,
+    C extends SimpleReferenceExpression<DB, TB> = DynamicReferenceBuilder
   >(
     column: C
   ): AggregateFunctionBuilder<
     DB,
     TB,
-    ExtractTypeFromReferenceExpression<DB, TB, C, O>
+    | ExtractTypeFromReferenceExpression<DB, TB, C, O>
+    | (null extends O ? null : never)
   > {
     return new AggregateFunctionBuilder({
       aggregateFunctionNode: AggregateFunctionNode.create(
@@ -162,6 +247,9 @@ export class FunctionModule<DB, TB extends keyof DB> {
   /**
    * Calls the `min` function for the column given as the argument.
    *
+   * If this is used in a `select` statement the type of the selected expression
+   * will be the referenced column's type.
+   *
    * ### Examples
    *
    * ```ts
@@ -172,16 +260,29 @@ export class FunctionModule<DB, TB extends keyof DB> {
    *   .execute()
    * ```
    *
+   * Sometimes a null is returned, e.g. when row count is 0, and no `group by`
+   * was used. It is highly recommended to include null in the output type union
+   * and handle null values in post-execute code, or wrap the function with a `coalesce`
+   * function.
+   *
+   * ```ts
+   * const { min } = db.fn
+   *
+   * db.selectFrom('toy')
+   *   .select(min<number | null, 'price'>('price').as('min_price'))
+   *   .execute()
+   * ```
    */
   min<
-    O extends number | string | bigint,
-    C extends SimpleReferenceExpression<DB, TB> = DynamicReferenceBuilder<any>
+    O extends number | string | bigint | null = number | string | bigint,
+    C extends SimpleReferenceExpression<DB, TB> = DynamicReferenceBuilder
   >(
     column: C
   ): AggregateFunctionBuilder<
     DB,
     TB,
-    ExtractTypeFromReferenceExpression<DB, TB, C, O>
+    | ExtractTypeFromReferenceExpression<DB, TB, C, O>
+    | (null extends O ? null : never)
   > {
     return new AggregateFunctionBuilder({
       aggregateFunctionNode: AggregateFunctionNode.create(
@@ -195,11 +296,11 @@ export class FunctionModule<DB, TB extends keyof DB> {
    * Calls the `sum` function for the column given as the argument.
    *
    * If this is used in a `select` statement the type of the selected expression
-   * will be `number | string | bigint` by default. This is because Kysely can't
-   * know the type the db driver outputs. Sometimes the output can be larger than
-   * the largest javascript number and a string is returned instead. Most drivers
-   * allow you to configure the output type of large numbers and Kysely can't
-   * know if you've done so.
+   * will be `number | string | bigint` by default. This is because Kysely
+   * can't know the type the db driver outputs. Sometimes the output can be larger
+   * than the largest javascript number and a string is returned instead. Most
+   * drivers allow you to configure the output type of large numbers and Kysely
+   * can't know if you've done so.
    *
    * You can specify the output type of the expression by providing
    * the type as the first type argument:
@@ -211,9 +312,22 @@ export class FunctionModule<DB, TB extends keyof DB> {
    *   .select(sum<number>('price').as('total_price'))
    *   .execute()
    * ```
+   *
+   * Sometimes a null is returned, e.g. when row count is 0, and no `group by`
+   * was used. It is highly recommended to include null in the output type union
+   * and handle null values in post-execute code, or wrap the function with a `coalesce`
+   * function.
+   *
+   * ```ts
+   * const { sum } = db.fn
+   *
+   * db.selectFrom('toy')
+   *   .select(sum<number | null>('price').as('total_price'))
+   *   .execute()
+   * ```
    */
   sum<
-    O extends number | string | bigint,
+    O extends number | string | bigint | null = number | string | bigint,
     C extends SimpleReferenceExpression<DB, TB> = SimpleReferenceExpression<
       DB,
       TB
