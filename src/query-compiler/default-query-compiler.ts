@@ -236,12 +236,12 @@ export class DefaultQueryCompiler
     nodes: ReadonlyArray<OperationNode>,
     separator = ', '
   ): void {
-    const lastNode = getLast(nodes)
+    const lastIndex = nodes.length - 1
 
-    for (const node of nodes) {
-      this.visitNode(node)
+    for (let i = 0; i <= lastIndex; i++) {
+      this.visitNode(nodes[i])
 
-      if (node !== lastNode) {
+      if (i < lastIndex) {
         this.append(separator)
       }
     }
@@ -516,7 +516,7 @@ export class DefaultQueryCompiler
   protected override visitCreateTable(node: CreateTableNode): void {
     this.append('create ')
 
-    if (node.frontModifiers) {
+    if (node.frontModifiers && node.frontModifiers.length > 0) {
       this.compileList(node.frontModifiers, ' ')
       this.append(' ')
     }
@@ -541,7 +541,7 @@ export class DefaultQueryCompiler
       this.append(node.onCommit)
     }
 
-    if (node.endModifiers) {
+    if (node.endModifiers && node.endModifiers.length > 0) {
       this.append(' ')
       this.compileList(node.endModifiers, ' ')
     }
@@ -555,6 +555,11 @@ export class DefaultQueryCompiler
 
     if (node.unsigned) {
       this.append(' unsigned')
+    }
+
+    if (node.frontModifiers && node.frontModifiers.length > 0) {
+      this.append(' ')
+      this.compileList(node.frontModifiers, ' ')
     }
 
     if (node.generated) {
@@ -592,6 +597,11 @@ export class DefaultQueryCompiler
     if (node.check) {
       this.append(' ')
       this.visitNode(node.check)
+    }
+
+    if (node.endModifiers && node.endModifiers.length > 0) {
+      this.append(' ')
+      this.compileList(node.endModifiers, ' ')
     }
   }
 

@@ -111,6 +111,7 @@ for (const dialect of BUILT_IN_DIALECTS) {
 
           expect(await getColumnMeta('test.a')).to.eql({
             dataType: 'int4',
+            dataTypeSchema: 'pg_catalog',
             isAutoIncrementing: true,
             isNullable: false,
             hasDefaultValue: true,
@@ -119,6 +120,7 @@ for (const dialect of BUILT_IN_DIALECTS) {
 
           expect(await getColumnMeta('test.b')).to.eql({
             dataType: 'int4',
+            dataTypeSchema: 'pg_catalog',
             isAutoIncrementing: false,
             isNullable: true,
             hasDefaultValue: false,
@@ -127,6 +129,7 @@ for (const dialect of BUILT_IN_DIALECTS) {
 
           expect(await getColumnMeta('test.l')).to.eql({
             dataType: 'bool',
+            dataTypeSchema: 'pg_catalog',
             isAutoIncrementing: false,
             isNullable: false,
             hasDefaultValue: true,
@@ -741,6 +744,43 @@ for (const dialect of BUILT_IN_DIALECTS) {
               ],
               parameters: [],
             },
+          })
+
+          await builder.execute()
+        })
+      }
+
+      if (dialect === 'mysql') {
+        it('should create a table while using modifiers to define columns', async () => {
+          const builder = ctx.db.schema
+            .createTable('test')
+            .addColumn('id', 'integer', (col) => col.primaryKey())
+            .addColumn('first_name', 'varchar(36)', (col) =>
+              col.modifyFront(sql`collate utf8mb4_general_ci`).notNull()
+            )
+            .addColumn('age', 'integer', (col) =>
+              col
+                .unsigned()
+                .notNull()
+                .modifyEnd(
+                  sql`comment ${sql.literal(
+                    'it is not polite to ask a woman her age'
+                  )}`
+                )
+            )
+
+          testSql(builder, dialect, {
+            postgres: NOT_SUPPORTED,
+            mysql: {
+              sql: [
+                'create table `test`',
+                '(`id` integer primary key,',
+                '`first_name` varchar(36) collate utf8mb4_general_ci not null,',
+                "`age` integer unsigned not null comment 'it is not polite to ask a woman her age')",
+              ],
+              parameters: [],
+            },
+            sqlite: NOT_SUPPORTED,
           })
 
           await builder.execute()

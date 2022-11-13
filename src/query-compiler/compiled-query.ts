@@ -3,7 +3,7 @@ import { freeze } from '../util/object-utils.js'
 import { createQueryId, QueryId } from '../util/query-id.js'
 import { RootOperationNode } from './query-compiler.js'
 
-export interface CompiledQuery {
+export interface CompiledQuery<O = unknown> {
   readonly query: RootOperationNode
   readonly queryId: QueryId
   readonly sql: string
