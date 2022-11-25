@@ -3,7 +3,7 @@ import { DeleteQueryBuilder } from '../query-builder/delete-query-builder.js'
 import { InsertQueryBuilder } from '../query-builder/insert-query-builder.js'
 import { CommonTableExpressionNode } from '../operation-node/common-table-expression-node.js'
 import { CommonTableExpressionNameNode } from '../operation-node/common-table-expression-name-node.js'
-import { QueryCreator } from '../query-creator.js'
+import type { QueryCreator } from '../query-creator.js'
 import { createQueryCreator } from './parse-utils.js'
 import { Expression } from '../expression/expression.js'
 

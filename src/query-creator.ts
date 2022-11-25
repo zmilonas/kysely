@@ -18,10 +18,10 @@ import {
 } from './parser/table-parser.js'
 import { QueryExecutor } from './query-executor/query-executor.js'
 import {
-  CommonTableExpression,
+  type CommonTableExpression,
   parseCommonTableExpression,
-  QueryCreatorWithCommonTableExpression,
-  RecursiveCommonTableExpression,
+  type QueryCreatorWithCommonTableExpression,
+  type RecursiveCommonTableExpression,
 } from './parser/with-parser.js'
 import { WithNode } from './operation-node/with-node.js'
 import { createQueryId } from './util/query-id.js'
