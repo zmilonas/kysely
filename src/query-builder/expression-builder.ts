@@ -19,6 +19,7 @@ import { RawBuilder } from '../raw-builder/raw-builder.js'
 import { freeze } from '../util/object-utils.js'
 import { QueryExecutor } from '../query-executor/query-executor.js'
 import { RawNode } from '../operation-node/raw-node.js'
+import { NOOP_QUERY_EXECUTOR } from '../query-executor/noop-query-executor.js'
 
 export class ExpressionBuilder<DB, TB extends keyof DB> {
   #props: ExpressionBuilderProps
@@ -177,4 +178,10 @@ export class ExpressionBuilder<DB, TB extends keyof DB> {
 
 export interface ExpressionBuilderProps {
   readonly executor: QueryExecutor
+}
+
+export function createExpressionBuilder(): ExpressionBuilder<any, any> {
+  return new ExpressionBuilder({
+    executor: NOOP_QUERY_EXECUTOR,
+  })
 }

@@ -6,10 +6,12 @@ import {
 import { AliasNode } from '../operation-node/alias-node.js'
 import { isOperationNodeSource } from '../operation-node/operation-node-source.js'
 import { OperationNode } from '../operation-node/operation-node.js'
-import { ExpressionBuilder } from '../query-builder/expression-builder.js'
+import {
+  createExpressionBuilder,
+  type ExpressionBuilder,
+} from '../query-builder/expression-builder.js'
 import { SelectQueryBuilder } from '../query-builder/select-query-builder.js'
 import { isFunction } from '../util/object-utils.js'
-import { createExpressionBuilder } from './parse-utils.js'
 
 export type ExpressionOrFactory<DB, TB extends keyof DB, V> =
   // SQL treats a subquery with a single selection as a scalar. That's
