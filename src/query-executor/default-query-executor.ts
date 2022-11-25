@@ -7,7 +7,7 @@ import {
 } from '../query-compiler/query-compiler.js'
 import { KyselyPlugin } from '../plugin/kysely-plugin.js'
 import { QueryExecutorBase } from './query-executor-base.js'
-import { DialectAdapter } from '../dialect/dialect-adapter.js'
+import type { DialectAdapter } from '../dialect/dialect-adapter.js'
 
 export class DefaultQueryExecutor extends QueryExecutorBase {
   #compiler: QueryCompiler
