@@ -28,7 +28,7 @@ import {
 import { JoinBuilder } from '../query-builder/join-builder.js'
 import { ValueNode } from '../operation-node/value-node.js'
 import { WhereInterface } from '../query-builder/where-interface.js'
-import { HavingInterface } from '../query-builder/having-interface.js'
+import type { HavingInterface } from '../query-builder/having-interface.js'
 import { createJoinBuilder, createSelectQueryBuilder } from './parse-utils.js'
 import { OperationNode } from '../operation-node/operation-node.js'
 import { Expression } from '../expression/expression.js'

@@ -1,7 +1,7 @@
 import { Expression } from '../expression/expression.js'
 import {
-  ComparisonOperatorExpression,
-  HavingGrouper,
+  type ComparisonOperatorExpression,
+  type HavingGrouper,
   OperandValueExpressionOrList,
 } from '../parser/binary-operation-parser.js'
 import { ReferenceExpression } from '../parser/reference-parser.js'
