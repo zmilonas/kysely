@@ -11,7 +11,7 @@ import { DropTypeNode } from '../operation-node/drop-type-node.js'
 import { DropViewNode } from '../operation-node/drop-view-node.js'
 import { QueryNode } from '../operation-node/query-node.js'
 import { RawNode } from '../operation-node/raw-node.js'
-import { CompiledQuery } from './compiled-query.js'
+import type { CompiledQuery } from './compiled-query.js'
 
 export type RootOperationNode =
   | QueryNode
