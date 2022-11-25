@@ -18,7 +18,11 @@ import {
 import { ReferenceExpression } from '../parser/reference-parser.js'
 import { SelectQueryNode } from '../operation-node/select-query-node.js'
 import { QueryNode } from '../operation-node/query-node.js'
-import { MergePartial, Nullable, SingleResultType } from '../util/type-utils.js'
+import type {
+  MergePartial,
+  Nullable,
+  SingleResultType,
+} from '../util/type-utils.js'
 import {
   OrderByDirectionExpression,
   OrderByExpression,
