@@ -1,13 +1,13 @@
 import { isReadonlyArray, isString } from '../util/object-utils.js'
 import { AliasNode } from '../operation-node/alias-node.js'
 import { TableNode } from '../operation-node/table-node.js'
-import {
-  AliasedExpressionOrFactory,
-  parseAliasedExpression,
-} from './expression-parser.js'
+import { parseAliasedExpression } from './expression-parser.js'
 import { IdentifierNode } from '../operation-node/identifier-node.js'
 import { OperationNode } from '../operation-node/operation-node.js'
-import { AliasedExpression } from '../expression/expression.js'
+import type {
+  AliasedExpression,
+  AliasedExpressionOrFactory,
+} from '../expression/expression.js'
 
 export type TableExpression<DB, TB extends keyof DB> =
   | TableReference<DB>

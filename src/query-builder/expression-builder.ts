@@ -11,9 +11,9 @@ import { WithSchemaPlugin } from '../plugin/with-schema/with-schema-plugin.js'
 import { createQueryId } from '../util/query-id.js'
 import { FunctionModule } from './function-module.js'
 import {
-  ExtractTypeFromReferenceExpression,
+  type ExtractTypeFromReferenceExpression,
   parseStringReference,
-  StringReference,
+  type StringReference,
 } from '../parser/reference-parser.js'
 import { RawBuilder } from '../raw-builder/raw-builder.js'
 import { freeze } from '../util/object-utils.js'

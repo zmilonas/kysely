@@ -17,13 +17,13 @@ import {
   DynamicReferenceBuilder,
   isDynamicReferenceBuilder,
 } from '../dynamic/dynamic-reference-builder.js'
-import {
-  AliasedExpressionOrFactory,
-  parseAliasedExpression,
-} from './expression-parser.js'
+import { parseAliasedExpression } from './expression-parser.js'
 import { Selectable, SelectType } from '../util/column-type.js'
 import { parseTable } from './table-parser.js'
-import { AliasedExpression } from '../expression/expression.js'
+import type {
+  AliasedExpression,
+  AliasedExpressionOrFactory,
+} from '../expression/expression.js'
 
 export type SelectExpression<DB, TB extends keyof DB> =
   | AnyAliasedColumnWithTable<DB, TB>
@@ -98,7 +98,9 @@ type ExtractTypeFromSelectExpression<
   ? QA extends A
     ? ValueType<O>
     : never
-  : SE extends (qb: any) => AliasedSelectQueryBuilder<any, any, infer O, infer QA>
+  : SE extends (
+      qb: any
+    ) => AliasedSelectQueryBuilder<any, any, infer O, infer QA>
   ? QA extends A
     ? ValueType<O>
     : never

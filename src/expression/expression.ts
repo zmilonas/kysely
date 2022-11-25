@@ -4,7 +4,9 @@ import {
   OperationNodeSource,
 } from '../operation-node/operation-node-source.js'
 import { OperationNode } from '../operation-node/operation-node.js'
-import { isObject, isString } from '../util/object-utils.js'
+import type { ExpressionBuilder } from '../query-builder/expression-builder.js'
+import type { SelectQueryBuilder } from '../query-builder/select-query-builder.js'
+import { isFunction, isObject, isString } from '../util/object-utils.js'
 
 /**
  * `Expression` represents an arbitrary SQL expression with a type.
@@ -120,4 +122,26 @@ export function isAliasedExpression(
     isString(obj.alias) &&
     isOperationNodeSource(obj)
   )
+}
+
+export type ExpressionOrFactory<DB, TB extends keyof DB, V> =
+  // SQL treats a subquery with a single selection as a scalar. That's
+  // why we need to explicitly allow `SelectQueryBuilder` here with a
+  // `Record<string, V>` output type, even though `SelectQueryBuilder`
+  // is also an `Expression`.
+  | SelectQueryBuilder<any, any, Record<string, V>>
+  | ((
+      eb: ExpressionBuilder<DB, TB>
+    ) => SelectQueryBuilder<any, any, Record<string, V>>)
+  | Expression<V>
+  | ((eb: ExpressionBuilder<DB, TB>) => Expression<V>)
+
+export type AliasedExpressionOrFactory<DB, TB extends keyof DB> =
+  | AliasedExpression<any, any>
+  | ((qb: ExpressionBuilder<DB, TB>) => AliasedExpression<any, any>)
+
+export function isExpressionOrFactory(
+  obj: unknown
+): obj is ExpressionOrFactory<any, any, any> {
+  return isExpression(obj) || isFunction(obj)
 }

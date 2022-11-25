@@ -10,16 +10,16 @@ import {
   ValueType,
 } from '../util/type-utils.js'
 import { SelectQueryBuilder } from '../query-builder/select-query-builder.js'
-import {
-  parseExpression,
-  ExpressionOrFactory,
-  isExpressionOrFactory,
-} from './expression-parser.js'
+import { parseExpression } from './expression-parser.js'
 import type { DynamicReferenceBuilder } from '../dynamic/dynamic-reference-builder.js'
 import { SelectType } from '../util/column-type.js'
 import { IdentifierNode } from '../operation-node/identifier-node.js'
 import { OperationNode } from '../operation-node/operation-node.js'
-import { Expression } from '../expression/expression.js'
+import {
+  type Expression,
+  type ExpressionOrFactory,
+  isExpressionOrFactory,
+} from '../expression/expression.js'
 import { SimpleReferenceExpressionNode } from '../operation-node/simple-reference-expression-node.js'
 
 export type SimpleReferenceExpression<DB, TB extends keyof DB> =
