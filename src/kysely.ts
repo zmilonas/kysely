@@ -1,4 +1,4 @@
-import { Dialect } from './dialect/dialect.js'
+import type { Dialect } from './dialect/dialect.js'
 import { SchemaModule } from './schema/schema.js'
 import { DynamicModule } from './dynamic/dynamic.js'
 import { DefaultConnectionProvider } from './driver/default-connection-provider.js'
