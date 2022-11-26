@@ -15,12 +15,13 @@ import { WithNode } from './with-node.js'
 import { SelectModifierNode } from './select-modifier-node.js'
 import { ExplainNode } from './explain-node.js'
 import { SetOperationNode } from './set-operation-node.js'
+import { SimpleReferenceExpressionNode } from './simple-reference-expression-node.js'
 
 export interface SelectQueryNode extends OperationNode {
   readonly kind: 'SelectQueryNode'
   readonly from: FromNode
   readonly selections?: ReadonlyArray<SelectionNode>
-  readonly distinctOnSelections?: ReadonlyArray<SelectionNode>
+  readonly distinctOnSelections?: ReadonlyArray<SimpleReferenceExpressionNode>
   readonly joins?: ReadonlyArray<JoinNode>
   readonly groupBy?: GroupByNode
   readonly orderBy?: OrderByNode
@@ -68,7 +69,7 @@ export const SelectQueryNode = freeze({
 
   cloneWithDistinctOnSelections(
     select: SelectQueryNode,
-    selections: ReadonlyArray<SelectionNode>
+    selections: ReadonlyArray<SimpleReferenceExpressionNode>
   ): SelectQueryNode {
     return freeze({
       ...select,
@@ -148,25 +149,25 @@ export const SelectQueryNode = freeze({
 
   cloneWithHaving(
     selectNode: SelectQueryNode,
-    filter: OperationNode
+    operation: OperationNode
   ): SelectQueryNode {
     return freeze({
       ...selectNode,
       having: selectNode.having
-        ? HavingNode.cloneWithFilter(selectNode.having, 'And', filter)
-        : HavingNode.create(filter),
+        ? HavingNode.cloneWithOperation(selectNode.having, 'And', operation)
+        : HavingNode.create(operation),
     })
   },
 
   cloneWithOrHaving(
     selectNode: SelectQueryNode,
-    filter: OperationNode
+    operation: OperationNode
   ): SelectQueryNode {
     return freeze({
       ...selectNode,
       having: selectNode.having
-        ? HavingNode.cloneWithFilter(selectNode.having, 'Or', filter)
-        : HavingNode.create(filter),
+        ? HavingNode.cloneWithOperation(selectNode.having, 'Or', operation)
+        : HavingNode.create(operation),
     })
   },
 

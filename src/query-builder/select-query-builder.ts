@@ -16,18 +16,10 @@ import {
   SelectExpressionOrList,
 } from '../parser/select-parser.js'
 import {
-  ExistsExpression,
-  parseExistFilter,
-  FilterOperator,
-  parseReferenceFilter,
-  parseWhereFilter,
-  parseHavingFilter,
-  parseNotExistFilter,
-  FilterValueExpressionOrList,
-  WhereGrouper,
-  HavingGrouper,
-} from '../parser/filter-parser.js'
-import { ReferenceExpression } from '../parser/reference-parser.js'
+  parseReferenceExpressionOrList,
+  ReferenceExpression,
+  ReferenceExpressionOrList,
+} from '../parser/reference-parser.js'
 import { SelectQueryNode } from '../operation-node/select-query-node.js'
 import { QueryNode } from '../operation-node/query-node.js'
 import { MergePartial, Nullable, SingleResultType } from '../util/type-utils.js'
@@ -57,6 +49,20 @@ import { Explainable, ExplainFormat } from '../util/explainable.js'
 import { ExplainNode } from '../operation-node/explain-node.js'
 import { parseSetOperation } from '../parser/set-operation-parser.js'
 import { AliasedExpression, Expression } from '../expression/expression.js'
+import {
+  ComparisonOperatorExpression,
+  HavingGrouper,
+  OperandValueExpressionOrList,
+  parseHaving,
+  parseReferentialFilter,
+  parseWhere,
+  WhereGrouper,
+} from '../parser/binary-operation-parser.js'
+import {
+  ExistsExpression,
+  parseExists,
+  parseNotExists,
+} from '../parser/unary-operation-parser.js'
 
 export class SelectQueryBuilder<DB, TB extends keyof DB, O>
   implements
@@ -79,8 +85,8 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
 
   where<RE extends ReferenceExpression<DB, TB>>(
     lhs: RE,
-    op: FilterOperator,
-    rhs: FilterValueExpressionOrList<DB, TB, RE>
+    op: ComparisonOperatorExpression,
+    rhs: OperandValueExpressionOrList<DB, TB, RE>
   ): SelectQueryBuilder<DB, TB, O>
 
   where(grouper: WhereGrouper<DB, TB>): SelectQueryBuilder<DB, TB, O>
@@ -91,29 +97,29 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
       ...this.#props,
       queryNode: QueryNode.cloneWithWhere(
         this.#props.queryNode,
-        parseWhereFilter(args)
+        parseWhere(args)
       ),
     })
   }
 
   whereRef(
     lhs: ReferenceExpression<DB, TB>,
-    op: FilterOperator,
+    op: ComparisonOperatorExpression,
     rhs: ReferenceExpression<DB, TB>
   ): SelectQueryBuilder<DB, TB, O> {
     return new SelectQueryBuilder({
       ...this.#props,
       queryNode: QueryNode.cloneWithWhere(
         this.#props.queryNode,
-        parseReferenceFilter(lhs, op, rhs)
+        parseReferentialFilter(lhs, op, rhs)
       ),
     })
   }
 
   orWhere<RE extends ReferenceExpression<DB, TB>>(
     lhs: RE,
-    op: FilterOperator,
-    rhs: FilterValueExpressionOrList<DB, TB, RE>
+    op: ComparisonOperatorExpression,
+    rhs: OperandValueExpressionOrList<DB, TB, RE>
   ): SelectQueryBuilder<DB, TB, O>
 
   orWhere(grouper: WhereGrouper<DB, TB>): SelectQueryBuilder<DB, TB, O>
@@ -124,21 +130,21 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
       ...this.#props,
       queryNode: QueryNode.cloneWithOrWhere(
         this.#props.queryNode,
-        parseWhereFilter(args)
+        parseWhere(args)
       ),
     })
   }
 
   orWhereRef(
     lhs: ReferenceExpression<DB, TB>,
-    op: FilterOperator,
+    op: ComparisonOperatorExpression,
     rhs: ReferenceExpression<DB, TB>
   ): SelectQueryBuilder<DB, TB, O> {
     return new SelectQueryBuilder({
       ...this.#props,
       queryNode: QueryNode.cloneWithOrWhere(
         this.#props.queryNode,
-        parseReferenceFilter(lhs, op, rhs)
+        parseReferentialFilter(lhs, op, rhs)
       ),
     })
   }
@@ -148,7 +154,7 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
       ...this.#props,
       queryNode: QueryNode.cloneWithWhere(
         this.#props.queryNode,
-        parseExistFilter(arg)
+        parseExists(arg)
       ),
     })
   }
@@ -158,7 +164,7 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
       ...this.#props,
       queryNode: QueryNode.cloneWithWhere(
         this.#props.queryNode,
-        parseNotExistFilter(arg)
+        parseNotExists(arg)
       ),
     })
   }
@@ -168,7 +174,7 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
       ...this.#props,
       queryNode: QueryNode.cloneWithOrWhere(
         this.#props.queryNode,
-        parseExistFilter(arg)
+        parseExists(arg)
       ),
     })
   }
@@ -180,15 +186,15 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
       ...this.#props,
       queryNode: QueryNode.cloneWithOrWhere(
         this.#props.queryNode,
-        parseNotExistFilter(arg)
+        parseNotExists(arg)
       ),
     })
   }
 
   having<RE extends ReferenceExpression<DB, TB>>(
     lhs: RE,
-    op: FilterOperator,
-    rhs: FilterValueExpressionOrList<DB, TB, RE>
+    op: ComparisonOperatorExpression,
+    rhs: OperandValueExpressionOrList<DB, TB, RE>
   ): SelectQueryBuilder<DB, TB, O>
 
   having(grouper: HavingGrouper<DB, TB>): SelectQueryBuilder<DB, TB, O>
@@ -200,29 +206,29 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
       ...this.#props,
       queryNode: SelectQueryNode.cloneWithHaving(
         this.#props.queryNode,
-        parseHavingFilter(args)
+        parseHaving(args)
       ),
     })
   }
 
   havingRef(
     lhs: ReferenceExpression<DB, TB>,
-    op: FilterOperator,
+    op: ComparisonOperatorExpression,
     rhs: ReferenceExpression<DB, TB>
   ): SelectQueryBuilder<DB, TB, O> {
     return new SelectQueryBuilder({
       ...this.#props,
       queryNode: SelectQueryNode.cloneWithHaving(
         this.#props.queryNode,
-        parseReferenceFilter(lhs, op, rhs)
+        parseReferentialFilter(lhs, op, rhs)
       ),
     })
   }
 
   orHaving<RE extends ReferenceExpression<DB, TB>>(
     lhs: RE,
-    op: FilterOperator,
-    rhs: FilterValueExpressionOrList<DB, TB, RE>
+    op: ComparisonOperatorExpression,
+    rhs: OperandValueExpressionOrList<DB, TB, RE>
   ): SelectQueryBuilder<DB, TB, O>
 
   orHaving(grouper: HavingGrouper<DB, TB>): SelectQueryBuilder<DB, TB, O>
@@ -234,21 +240,21 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
       ...this.#props,
       queryNode: SelectQueryNode.cloneWithOrHaving(
         this.#props.queryNode,
-        parseHavingFilter(args)
+        parseHaving(args)
       ),
     })
   }
 
   orHavingRef(
     lhs: ReferenceExpression<DB, TB>,
-    op: FilterOperator,
+    op: ComparisonOperatorExpression,
     rhs: ReferenceExpression<DB, TB>
   ): SelectQueryBuilder<DB, TB, O> {
     return new SelectQueryBuilder({
       ...this.#props,
       queryNode: SelectQueryNode.cloneWithOrHaving(
         this.#props.queryNode,
-        parseReferenceFilter(lhs, op, rhs)
+        parseReferentialFilter(lhs, op, rhs)
       ),
     })
   }
@@ -258,7 +264,7 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
       ...this.#props,
       queryNode: SelectQueryNode.cloneWithHaving(
         this.#props.queryNode,
-        parseExistFilter(arg)
+        parseExists(arg)
       ),
     })
   }
@@ -268,7 +274,7 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
       ...this.#props,
       queryNode: SelectQueryNode.cloneWithHaving(
         this.#props.queryNode,
-        parseNotExistFilter(arg)
+        parseNotExists(arg)
       ),
     })
   }
@@ -278,7 +284,7 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
       ...this.#props,
       queryNode: SelectQueryNode.cloneWithOrHaving(
         this.#props.queryNode,
-        parseExistFilter(arg)
+        parseExists(arg)
       ),
     })
   }
@@ -290,7 +296,7 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
       ...this.#props,
       queryNode: SelectQueryNode.cloneWithOrHaving(
         this.#props.queryNode,
-        parseNotExistFilter(arg)
+        parseNotExists(arg)
       ),
     })
   }
@@ -513,20 +519,20 @@ export class SelectQueryBuilder<DB, TB extends keyof DB, O>
    * where "pet"."name" = $1
    * ```
    */
-  distinctOn<SE extends SelectExpression<DB, TB>>(
-    selections: ReadonlyArray<SE>
+  distinctOn<RE extends ReferenceExpression<DB, TB>>(
+    selections: ReadonlyArray<RE>
   ): SelectQueryBuilder<DB, TB, O>
 
-  distinctOn<SE extends SelectExpression<DB, TB>>(
-    selection: SE
+  distinctOn<RE extends ReferenceExpression<DB, TB>>(
+    selection: RE
   ): SelectQueryBuilder<DB, TB, O>
 
-  distinctOn(selection: SelectExpressionOrList<DB, TB>): any {
+  distinctOn(selection: ReferenceExpressionOrList<DB, TB>): any {
     return new SelectQueryBuilder({
       ...this.#props,
       queryNode: SelectQueryNode.cloneWithDistinctOnSelections(
         this.#props.queryNode,
-        parseSelectExpressionOrList(selection)
+        parseReferenceExpressionOrList(selection)
       ),
     })
   }
